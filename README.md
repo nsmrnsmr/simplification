@@ -1,7 +1,9 @@
 # simplification
 メッシュの簡略化を行うプログラム
 
+入力：　メッシュ（off形式），縮約する辺の本数
 
+出力：　簡略化したメッシュ（off形式）
 <p align="center">
   <img src="image/mesh00.png" width="">
   <br>
