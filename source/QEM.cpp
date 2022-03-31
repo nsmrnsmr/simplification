@@ -3,6 +3,7 @@
 #include <cstdio>
 # include<vector>
 # include<map>
+#include <queue>
 # include"Eigen/Core"
 #include "Eigen/Dense"
 #define N 100
@@ -16,7 +17,7 @@ struct Face{
 };
 struct Edge{
   int v0, v1;
-  Edge(int v0_, int v1_): v0(v0_), v1(v1_){}
+  Edge(int v0_=0, int v1_=0): v0(v0_), v1(v1_){}
 };
 
 struct Qv{
@@ -78,6 +79,10 @@ struct Qv{
   double calcQEM(const Vec3d &p){
     return p.transpose()*A*p + 2*b.dot(p) + c;
   }
+
+  double calcQEM(){
+    return -1*b.transpose()*A.inverse()*b + c;
+  }
 };
 
 struct unionFind{
@@ -92,25 +97,41 @@ struct unionFind{
     if( node[n] < 0 ) return n;
     else return node[n] = find(node[n]);
   }
+
+  //デバック用
+  int find(int n, int cnt){
+    std::cout << n << "\n";
+    cnt++;
+    if(cnt > 10) throw cnt;
+    if( node[n] < 0 ) return n;
+    else{
+      node[n] = find(node[n], cnt);
+      return node[n];
+    }
+  }
+
   //二つの木を深い方に統合する（深さが同じ場合xを根とする）
   void marge(int x, int y){
     x = find(x);
     y = find(y);
     int depthX, depthY;
-    depthX = -1*node[find(x)];
-    depthY = -1*node[find(y)];
-    if( depthX == depthY ){
+    depthX = -1*node[x];
+    depthY = -1*node[y];
+    //if(depthX < 0)std::cout << depthX <<"\n";
+    //if(depthY < 0)std::cout << depthY <<"\n";
+    if( depthX > depthY ) node[y] = x;
+    else if( depthY > depthX ) node[x] = y;
+    else if( x != y ){
       node[y] = x;
       node[x]--;
     }
-    else if( depthX > depthY ) node[y] = x;
-    else node[x] = y;
   }
 };
 
-int main(){
+int main(int argc, char *argv[]){
 //メッシュの読み込み//////////////////////////////////
-  FILE* fl = fopen("294_kitten_uniform.off", "r");
+  //FILE* fl = fopen("294_kitten_uniform.off", "r");
+  FILE* fl = fopen(argv[1], "r");
   if(!fl){
     perror("File opennig error");
     return 0;
@@ -156,73 +177,62 @@ int main(){
     Q[y].add(areaQf);
     Q[z].add(areaQf);
   }
-  std::vector<Vec3d> vertexQ;
-  std::vector<double> qems;
-  bool ttt=true;
+
+  auto c = [](const std::pair<double, Edge> &a, const std::pair<double, Edge> &b){ return a.first > b.first; };
+  std::priority_queue<std::pair<double, Edge>, std::vector<std::pair<double, Edge> >, decltype(c) > qems(c);
   for(auto e : edges){
     Qv Qtmp = Q[e.v0] + Q[e.v1];
-    Vec3d Ptmp = Qtmp.A.fullPivLu().solve(-1*Qtmp.b);
-    vertexQ.push_back(Ptmp);
-    qems.push_back(Qtmp.calcQEM(Ptmp));
-    if(ttt){
-      std::cout << vertices[e.v0].x() <<" "<< vertices[e.v0].y() <<" "<< vertices[e.v0].z() <<"\n";
-      std::cout << vertices[e.v1].x() <<" "<< vertices[e.v1].y() <<" "<< vertices[e.v1].z() <<"\n";
-      std::cout << Ptmp.x() <<" "<< Ptmp.y() <<" "<< Ptmp.z() <<"\n";
-      ttt = false;
-    }
-
+    double val = Qtmp.calcQEM();
+    std::pair<double, Edge> tmp;
+    tmp.first = val;
+    tmp.second = e;
+    qems.push(tmp);
   }
-
+//  std::vector<bool> stamp(edges.size(), false);
   unionFind u(v);
-  int n;
-  std::cout << "目標頂点数: "; std::cin >> n;
+  int n = 100000;
+  //std::cout << "目標頂点数: "; std::cin >> n;
+
 //QEM最小の辺と新しい頂点の算出（辺縮約をしていく）//////////////////////
-  for(int cnt=0; cnt<v-n; cnt++){
-    double min = 9999999;
-    Vec3d p;
-    int x, y;
-    Qv minQ;
-    int i = 0;
-    for(auto e : edges){
-      int xx = u.find(e.v0);
-      int yy = u.find(e.v1);
-      if( xx == yy ){
-        i++;
-        continue;
-      }
-      double qem;
-      Vec3d Ptmp;
-      Qv Qtmp = Q[xx] + Q[yy];
-      if( u.node[xx] == -1 && u.node[yy] == -1 ){
-        Ptmp = vertexQ[i];
-        qem = qems[i];
-      }
-      else{
-        Ptmp = Qtmp.A.fullPivLu().solve(Qtmp.b);
-        qem = Qtmp.calcQEM(Ptmp);
-      }
-      if( qem < min){
-        min = qem;
-        minQ = Qtmp;
-        p = Ptmp;
-        x = xx;
-        y = yy;
-      }
-      i++;
-    }
-    u.marge(x, y);
-    vertices[u.find(x)] = p;
-    Q[u.find(x)] = minQ;
-/*    std::vector<Edge> tmp;
-    for(auto &e : edges){
-      x = u.find(e.v0);
-      y = u.find(e.v1);
-      if( x == e.v0 && y == e.v1 ) tmp.push_back(e);
-    }
-    edges = tmp;*/
-    //std::cout << "反復: " << cnt <<"\n";
+  int esize = edges.size();
+  std::cout << esize << "\n";
+  for(int cnt=0; cnt<esize-n;){
+    //std::cout <<cnt<< " roop\n";
+    std::pair<double, Edge> min = qems.top();
+    //std::cout <<"0: "<< qems.size() <<"\n";
+    qems.pop();
+    //std::cout <<"1: "<< qems.size() <<"\n";
+    std::pair<double, Edge> minSec = qems.top();
+    //std::cout <<"2: "<< qems.size() <<"\n";
+
+    Edge e = min.second;
+    int idx0 = u.find(e.v0);
+    int idx1 = u.find(e.v1);
+    Qv Qe = Q[idx0] + Q[idx1];
+    Vec3d p = Qe.A.fullPivLu().solve(-1*Qe.b);
+    double val = Qe.calcQEM(p);
+
+    if( val <= minSec.first){
+      u.marge(idx0, idx1);
+      //Qv Qe = Q[idx0] + Q[idx1];
+      vertices[u.find(idx0)] = p;
+      Q[u.find(idx0)] = Qe;
+      cnt++;
+    }else{
+      //Qv Qe = Q[idx0] + Q[idx1];
+      //double val = Qe.calcQEM();
+      //Edge ee(idx0, idx1);
+      Edge ee(e.v0, e.v1);
+      std::pair<double, Edge> tmp;
+      tmp.first = val;
+      tmp.second = ee;
+      qems.push(tmp);
+    }  
+    std::cout <<"cnt: "<< cnt << "\n";
   }
-//メッシュの再構成////////////////////////////////////////////////////////
+
+  std::cout << "remeshing\n";
+//メッシュの構成////////////////////////////////////////////////////////
   std::map<int,int> m;
   std::vector<Vec3d> newVertex;
   std::vector<Face> newFace;
@@ -238,6 +248,7 @@ int main(){
     a = u.find(f.a);
     b = u.find(f.b);
     c = u.find(f.c);
+    if( a != u.find(f.a) || b != u.find(f.b) || c != u.find(f.c) ) continue;
     if( a != b && b != c && c != a){
       a = m.at(a);
       b = m.at(b);
