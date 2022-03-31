@@ -1,4 +1,4 @@
-//とりあえずのversion1
+//バージョン1
 #include <iostream>
 #include <fstream>
 #include <cstdio>
