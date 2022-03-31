@@ -231,7 +231,7 @@ int main(int argc, char *argv[]){
     std::cout <<"cnt: "<< cnt << "\n";
   }
 
-  std::cout << "remeshing\n";
+  std::cout << "output\n";
 //メッシュの構成////////////////////////////////////////////////////////
   std::map<int,int> m;
   std::vector<Vec3d> newVertex;
