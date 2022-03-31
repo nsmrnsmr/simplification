@@ -1,4 +1,4 @@
-# simplification
+# mesh simplification
 メッシュの簡略化を行うプログラム
 
 入力：　メッシュ（off形式），縮約する辺の本数
