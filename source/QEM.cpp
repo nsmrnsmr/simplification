@@ -1,11 +1,16 @@
+/*QEM simplification
+  実行までの例（Eigenのパスは自身のパスを指定してください）
+  g++ QEM.cpp -o QEM -std=c++17 -I /usr/local/.../include/eigen3
+  ./QEM sample.off
+*/
 # include<iostream>
-#include <fstream>
-#include <cstdio>
+# include<fstream>
+# include<cstdio>
 # include<vector>
 # include<map>
-#include <queue>
+# include<queue>
 # include"Eigen/Core"
-#include "Eigen/Dense"
+# include"Eigen/Dense"
 #define N 100
 using Vec3d = Eigen::Vector3d;
 using MatXd = Eigen::MatrixXd;
