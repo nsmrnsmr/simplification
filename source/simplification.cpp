@@ -1,4 +1,8 @@
-//バージョン1
+/*mesh simplification(vertex clustering)
+  実行までの例（Eigenのパスは自身のパスを指定してください）
+  g++ simplification.cpp -o simplification -std=c++17 -I /usr/local/.../include/eigen3
+  ./simplification sample.off
+*/
 #include <iostream>
 #include <fstream>
 #include <cstdio>
