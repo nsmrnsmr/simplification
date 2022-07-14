@@ -6,9 +6,10 @@
 出力：　簡略化したメッシュ（off形式）
 
 ### 実行方法
-- g++ simplification.cpp -o simplification -std=c++17 -I /usr/local/.../include/eigen3
-- ./simplification sample.off
-  
+```
+g++ simplification.cpp -o simplification -std=c++17 -I /usr/local/.../include/eigen3
+./simplification sample.off
+```
 ---
 <p align="center">
   <img src="image/mesh00.png" width="">
